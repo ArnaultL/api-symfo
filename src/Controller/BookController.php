@@ -12,15 +12,15 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 class BookController extends AbstractController
 {
-    #[Route('api/books', name: 'app_book', methods: ['GET'])]
-    public function getBookList(BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
+    #[Route('api/books', name: 'bookAll', methods: ['GET'])]
+    public function getBooks(BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
     {
         $books = $bookRepository->findAll();
         $jsonBooks = $serializer->serialize($books, 'json', ['groups' => 'getBooks']);
         return new JsonResponse($jsonBooks, Response::HTTP_OK, [], true);
     }
 
-    #[Route('api/books/{id}', name: 'app_book', methods: ['GET'])]
+    #[Route('api/books/{id}', name: 'bookDetails', methods: ['GET'])]
     public function getDetailBook(Book $book, SerializerInterface $serializer)
     {
         $jsonBook = $serializer->serialize($book, 'json', ['groups' => 'getBooks']);
