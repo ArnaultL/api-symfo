@@ -14,6 +14,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class BookController extends AbstractController
 {
@@ -43,12 +44,18 @@ class BookController extends AbstractController
 
     #[Route('api/books', name: 'createBook', methods: ['POST'])]
     public function createBook(Request $request, SerializerInterface $serializer, EntityManagerInterface $em,
-     UrlGeneratorInterface $urlGenerator, AuthorRepository $authorRepository): JsonResponse
+     UrlGeneratorInterface $urlGenerator, AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse
     {
         $book = $serializer->deserialize($request->getContent(), Book::class, 'json');
         $content = $request->toArray();
         $idAuthor = $content['idAuthor'] ?? -1;
         $book->setAuthor($authorRepository->find($idAuthor));
+        $errors = $validator->validate($book);
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST,
+                [], true
+            );
+        }
         $em->persist($book);
         $em->flush();
 
@@ -63,7 +70,7 @@ class BookController extends AbstractController
 
     #[Route('api/books/{id}', name: 'updateBook', methods: ['PUT'])]
     public function updateBook(Request $request, SerializerInterface $serializer, Book $currentBook,
-        EntityManagerInterface $em, AuthorRepository $authorRepository): JsonResponse
+        EntityManagerInterface $em, AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse
     {
         $updatedBook = $serializer->deserialize(
             $request->getContent(),
@@ -74,6 +81,12 @@ class BookController extends AbstractController
         $content = $request->toArray();
         $idAuthor = $content['idAuthor'] ?? -1;
         $updatedBook->setAuthor($authorRepository->find($idAuthor));
+        $errors = $validator->validate($updatedBook);
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST,
+                [], true
+            );
+        }
         $em->persist($updatedBook);
         $em->flush();
         return new JsonResponse(null, JsonResponse::HTTP_NO_CONTENT);

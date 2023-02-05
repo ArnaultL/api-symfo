@@ -7,10 +7,14 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: AuthorRepository::class)]
 class Author
 {
+    const ALLOWED_PROPERTIES = ['firstName', 'lastName'];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -19,10 +23,15 @@ class Author
 
     #[ORM\Column(length: 255)]
     #[Groups(["getBooks", "getAuthors"])]
+    #[Assert\NotBlank(message: "Le nom de l'auteur est obligatoire")]
+    #[Assert\Length(min: 1, max: 255, minMessage: "Le nom de l'auteur doit faire au moins {{ limit }} caractères",
+    maxMessage: "Le nom de l'auteur ne peut pas faire plus de {{ limit }} caractères")]
     private ?string $lastName = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Groups(["getBooks", "getAuthors"])]
+    #[Assert\Length(min: 1, max: 255, minMessage: "Le prénom de l'auteur doit faire au moins {{ limit }} caractères",
+    maxMessage: "Le prénom de l'auteur ne peut pas faire plus de {{ limit }} caractères")]
     private ?string $firstName = null;
 
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: Book::class)]

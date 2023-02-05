@@ -7,7 +7,7 @@
         "php": ">=8.0.2",
         "ext-ctype": "*",
         "ext-iconv": "*",
-        "doctrine/annotations": "^1.0",
+        "doctrine/annotations": "^1.14",
         "doctrine/doctrine-bundle": "^2.8",
         "doctrine/doctrine-migrations-bundle": "^3.2",
         "doctrine/orm": "^2.14",
@@ -21,7 +21,9 @@
         "symfony/property-access": "6.0.*",
         "symfony/property-info": "6.0.*",
         "symfony/runtime": "6.0.*",
+        "symfony/security-bundle": "6.0.*",
         "symfony/serializer": "6.0.*",
+        "symfony/validator": "6.0.*",
         "symfony/yaml": "6.0.*"
     },
     "require-dev": {
