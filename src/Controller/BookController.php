@@ -16,14 +16,22 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 class BookController extends AbstractController
 {
     #[Route('api/books', name: 'readBooks', methods: ['GET'])]
-    public function getBooks(BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
+    public function getBooks(BookRepository $bookRepository, SerializerInterface $serializer, Request $request, TagAwareCacheInterface $cachePool): JsonResponse
     {
-        $books = $bookRepository->findAll();
-        $jsonBooks = $serializer->serialize($books, 'json', ['groups' => 'getBooks']);
+        $page = $request->get('page', 1);
+        $limit = $request->get('limit', 3);
+        $idCache = "getBooks-" . $page . "-" . $limit;
+        $jsonBooks = $cachePool->get($idCache, function (ItemInterface $item) use ($bookRepository, $page, $limit, $serializer) {
+            $item->tag("booksCache");
+            $books =  $bookRepository->findAllWithPagination($page, $limit);
+            return $serializer->serialize($books, 'json', ['groups' => 'getBooks']);
+        });
         return new JsonResponse($jsonBooks, Response::HTTP_OK, [], true);
     }
 
@@ -35,8 +43,10 @@ class BookController extends AbstractController
     }
 
     #[Route('api/books/{id}', name: 'deleteBook', methods: ['DELETE'])]
-    public function deleteBook(Book $book, EntityManagerInterface $em): JsonResponse
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour supprimer un livre')]
+    public function deleteBook(Book $book, EntityManagerInterface $em, TagAwareCacheInterface $cachePool): JsonResponse
     {
+        $cachePool->invalidateTags(["booksCache"]);
         $em->remove($book);
         $em->flush();
 
@@ -71,6 +81,7 @@ class BookController extends AbstractController
     }
 
     #[Route('api/books/{id}', name: 'updateBook', methods: ['PUT'])]
+    #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour modifier un livre existant')]
     public function updateBook(Request $request, SerializerInterface $serializer, Book $currentBook,
         EntityManagerInterface $em, AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse
     {
