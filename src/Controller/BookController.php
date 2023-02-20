@@ -19,10 +19,43 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use App\Service\VersioningService;
+use Nelmio\ApiDocBundle\Annotation\Model;
+use Nelmio\ApiDocBundle\Annotation\Security;
+use OpenApi\Attributes as OA;
 
 class BookController extends AbstractController
 {
+    /**
+     * Cette méthode permet de récupérer l'ensemble des livres.
+     *
+     *
+     * @param BookRepository $bookRepository
+     * @param SerializerInterface $serializer
+     * @param Request $request
+     * @return JsonResponse
+     */
     #[Route('api/books', name: 'readBooks', methods: ['GET'])]
+    #[OA\Response(
+        response: 200,
+        description: 'Retourne la liste des livres',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(ref: new Model(type: Book::class, groups: ['getBooks']))
+        )
+    )]
+    #[OA\Parameter(
+        name: 'page',
+        in: 'query',
+        description: 'La page que l\'on veut récupérer',
+        schema: new OA\Schema(type: 'int')
+    )]
+    #[OA\Parameter(
+        name: 'limit',
+        in: 'query',
+        description: 'Le nombre d\'éléments que l\'on veut récupérer',
+        schema: new OA\Schema(type: 'int')
+    )]
+    #[OA\Tag(name: 'Books')]
     public function getBooks(BookRepository $bookRepository, SerializerInterface $serializer, Request $request, TagAwareCacheInterface $cachePool): JsonResponse
     {
         $page = $request->get('page', 1);
@@ -37,7 +70,12 @@ class BookController extends AbstractController
         return new JsonResponse($jsonBooks, Response::HTTP_OK, [], true);
     }
 
+    /**
+     * Cette méthode permet de récupérer un livre en particulier.
+     *
+     */
     #[Route('api/books/{id}', name: 'readBook', methods: ['GET'])]
+    #[OA\Tag(name: 'Books')]
     public function getDetailBook(Book $book, SerializerInterface $serializer, VersioningService $versioningService): JsonResponse
     {
         $version = $versioningService->getVersion();
@@ -47,8 +85,21 @@ class BookController extends AbstractController
         return new JsonResponse($jsonBook, Response::HTTP_OK, [], true);
     }
 
+    /**
+     * Cette méthode permet de supprimer un livre.
+     *
+     */
     #[Route('api/books/{id}', name: 'deleteBook', methods: ['DELETE'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour supprimer un livre')]
+    #[OA\HeaderParameter(
+        name: 'Authorization',
+        required: true
+    )]
+    #[OA\Response(
+        response: 204,
+        description: 'Supprime un livre'
+    )]
+    #[OA\Tag(name: 'Books')]
     public function deleteBook(Book $book, EntityManagerInterface $em, TagAwareCacheInterface $cachePool): JsonResponse
     {
         $cachePool->invalidateTags(["booksCache"]);
@@ -58,8 +109,15 @@ class BookController extends AbstractController
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
+    /**
+     * Cette méthode permet d'ajouter un livre
+     *
+     */
     #[Route('api/books', name: 'createBook', methods: ['POST'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour créer un livre')]
+    #[OA\RequestBody(content: new Model(type: Book::class, groups: ["getBooks"]))]
+    #[OA\Response(response: 201, description: 'Crée un livre', content: new Model(type: Book::class, groups: ["getBooks"]))]
+    #[OA\Tag(name: 'Books')]
     public function createBook(Request $request, SerializerInterface $serializer, EntityManagerInterface $em,
      UrlGeneratorInterface $urlGenerator, AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse
     {
@@ -86,8 +144,13 @@ class BookController extends AbstractController
         return new JsonResponse($jsonBook, Response::HTTP_CREATED, ['location' => $location], true);
     }
 
+    /**
+     * Cette méthode permet de modifier/remplacer un livre.
+     *
+     */
     #[Route('api/books/{id}', name: 'updateBook', methods: ['PUT'])]
     #[IsGranted('ROLE_ADMIN', message: 'Vous n\'avez pas les droits suffisants pour modifier un livre existant')]
+    #[OA\Tag(name: 'Books')]
     public function updateBook(Request $request, SerializerInterface $serializer, Book $currentBook,
         EntityManagerInterface $em, AuthorRepository $authorRepository, ValidatorInterface $validator): JsonResponse
     {
