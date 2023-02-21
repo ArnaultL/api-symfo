@@ -5,10 +5,11 @@ namespace App\Entity;
 use App\Repository\BookRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use JMS\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 use Hateoas\Configuration\Annotation as Hateoas;
 use JMS\Serializer\Annotation\Since;
+use ApiPlatform\Core\Annotation\ApiResource;
 /**
  * @Hateoas\Relation(
  *      "self",
@@ -38,6 +39,7 @@ use JMS\Serializer\Annotation\Since;
  * )
  *
  */
+#[ApiResource(paginationClientItemsPerPage: true, normalizationContext: ['groups' => ['getBooks']])]
 #[ORM\Entity(repositoryClass: BookRepository::class)]
 class Book
 {
